@@ -3,7 +3,7 @@ import {
   deleteUserPreferences,
   getUserPreferences,
   updateUserPreferences,
-} from '../repositories/preferences.repository.js';
+} from "../repositories/preferences.repository.js";
 
 //need to add validation and error handling in the future
 
@@ -25,5 +25,13 @@ export async function removePreferences(userId) {
 }
 
 export async function updatePreferences(userId, preferences) {
-  return await updateUserPreferences(userId, preferences);
+  const existingPreferences = await getUserPreferences(userId);
+
+  if (!existingPreferences) {
+    throw new Error("Preferences not found");
+  }
+
+  const updatedPreferences = { ...existingPreferences, ...preferences };
+
+  return await updateUserPreferences(userId, updatedPreferences);
 }
