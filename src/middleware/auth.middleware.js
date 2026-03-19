@@ -20,7 +20,9 @@ export async function getUserIdFromRequest(req) {
   const userId = req.user?.userId;
 
   if (!userId) {
-    throw new Error("User ID not found in request");
+    const error = new Error("User ID not found in request");
+    error.statusCode = 401;
+    throw error;
   }
 
   return userId;

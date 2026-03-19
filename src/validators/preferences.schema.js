@@ -60,3 +60,13 @@ export function validatePreferences(preferences) {
 export function isPlainObject(obj) {
   return Object.prototype.toString.call(obj) === "[object Object]";
 }
+
+export function sanitizePreferences(preferences) {
+  const sanitized = {};
+  for (const key of requiredPreferences) {
+    if (key in preferences) {
+      sanitized[key] = preferences[key];
+    }
+  }
+  return sanitized;
+}
