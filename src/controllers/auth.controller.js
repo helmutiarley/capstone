@@ -4,6 +4,7 @@ import {
 } from "../repositories/users.repository.js";
 import bcryptjs from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { validateLoginInput } from "../validators/user.schema.js";
 
 const saltRounds = 10;
 const jwtSecret = process.env.JWT_SECRET;
@@ -34,9 +35,8 @@ export async function register(req, res) {
 }
 
 export async function login(req, res) {
-  // FEATURE: add input validation and sanitization
-  const { email, password } = req.body;
   try {
+    const { email, password } = validateLoginInput(req.body);
     // Find the user by email
     const user = await findUserByEmail(email);
     if (!user) {
