@@ -18,6 +18,7 @@ jobs:
       TRAEFIK_NETWORK: ${{ secrets.TRAEFIK_NETWORK }}
       TRAEFIK_ENTRYPOINTS: ${{ secrets.TRAEFIK_ENTRYPOINTS }}
       TRAEFIK_CERTRESOLVER: ${{ secrets.TRAEFIK_CERTRESOLVER }}
+      TRAEFIK_ACME_EMAIL: ${{ secrets.TRAEFIK_ACME_EMAIL }}
       COOKIE_SECURE: ${{ secrets.COOKIE_SECURE }}
 
     steps:
@@ -31,7 +32,7 @@ jobs:
           timeout: 60s
           command_timeout: 20m
           script_stop: true
-          envs: REPOSITORY,POSTGRES_DB,POSTGRES_USER,POSTGRES_PASSWORD,JWT_SECRET,APP_DOMAIN,TRAEFIK_NETWORK,TRAEFIK_ENTRYPOINTS,TRAEFIK_CERTRESOLVER,COOKIE_SECURE
+          envs: REPOSITORY,POSTGRES_DB,POSTGRES_USER,POSTGRES_PASSWORD,JWT_SECRET,APP_DOMAIN,TRAEFIK_NETWORK,TRAEFIK_ENTRYPOINTS,TRAEFIK_CERTRESOLVER,TRAEFIK_ACME_EMAIL,COOKIE_SECURE
           script: |
             set -eu
 
@@ -70,6 +71,7 @@ jobs:
             TRAEFIK_NETWORK_VALUE="${TRAEFIK_NETWORK:-traefik-public}"
             TRAEFIK_ENTRYPOINTS_VALUE="${TRAEFIK_ENTRYPOINTS:-websecure}"
             TRAEFIK_CERTRESOLVER_VALUE="${TRAEFIK_CERTRESOLVER:-letsencrypt}"
+            TRAEFIK_ACME_EMAIL_VALUE="${TRAEFIK_ACME_EMAIL:?TRAEFIK_ACME_EMAIL secret is required}"
             COOKIE_SECURE_VALUE="${COOKIE_SECURE:-true}"
             cat > .env <<EOF
             POSTGRES_DB=${POSTGRES_DB}
@@ -84,6 +86,15 @@ jobs:
             EOF
 
             docker network inspect "${TRAEFIK_NETWORK_VALUE}" >/dev/null 2>&1 || docker network create "${TRAEFIK_NETWORK_VALUE}"
+
+            mkdir -p /root/capstone/infra/traefik/data/letsencrypt
+            touch /root/capstone/infra/traefik/data/letsencrypt/acme.json
+            chmod 600 /root/capstone/infra/traefik/data/letsencrypt/acme.json
+
+            TRAEFIK_NETWORK="${TRAEFIK_NETWORK_VALUE}" \
+            TRAEFIK_CERTRESOLVER="${TRAEFIK_CERTRESOLVER_VALUE}" \
+            TRAEFIK_ACME_EMAIL="${TRAEFIK_ACME_EMAIL_VALUE}" \
+            docker compose -p traefik -f infra/traefik/docker-compose.yml up -d
 
             docker compose up -d postgres
 
