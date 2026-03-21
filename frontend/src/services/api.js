@@ -31,6 +31,13 @@ export function login(payload) {
   });
 }
 
+export function register(payload) {
+  return request("/auth/register", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
 export function logout() {
   return request("/auth/logout", {
     method: "POST",

@@ -5,6 +5,7 @@ import {
   deletePreferences,
   getPreferences,
   login,
+  register,
   logout,
   updatePreferences,
 } from "./services/api";
@@ -52,10 +53,11 @@ const loginForm = reactive({
 
 const preferencesForm = reactive(createDefaultPreferences());
 
+const authMode = ref("login");
 const isAuthenticated = ref(false);
 const hasStoredPreferences = ref(false);
 const isLoadingSession = ref(true);
-const isSubmittingLogin = ref(false);
+const isSubmittingAuth = ref(false);
 const isSavingPreferences = ref(false);
 const isDeletingPreferences = ref(false);
 const isCreatingPreferences = ref(false);
@@ -75,6 +77,8 @@ const welcomeMessage = computed(() => {
 const shouldShowPreferencesForm = computed(
   () => isAuthenticated.value && (hasStoredPreferences.value || isCreatingPreferences.value)
 );
+
+const authTitle = computed(() => (authMode.value === "login" ? "Login" : "Create account"));
 
 function setFeedback(message, tone = "neutral") {
   feedback.value = message;
@@ -121,19 +125,32 @@ async function loadPreferences() {
   }
 }
 
-async function handleLogin() {
-  isSubmittingLogin.value = true;
-  setFeedback("Signing you in...", "neutral");
+async function handleAuthSubmit() {
+  isSubmittingAuth.value = true;
+  setFeedback(
+    authMode.value === "login" ? "Signing you in..." : "Creating your account...",
+    "neutral"
+  );
 
   try {
+    if (authMode.value === "register") {
+      await register(loginForm);
+      setFeedback("Account created. Signing you in...", "neutral");
+    }
+
     await login(loginForm);
     loginForm.password = "";
     await loadPreferences();
-    setFeedback("Login successful. Your session is ready.", "success");
+    setFeedback(
+      authMode.value === "login"
+        ? "Login successful. Your session is ready."
+        : "Account created and login successful.",
+      "success"
+    );
   } catch (error) {
     setFeedback(error.message, "error");
   } finally {
-    isSubmittingLogin.value = false;
+    isSubmittingAuth.value = false;
   }
 }
 
@@ -207,6 +224,17 @@ function handleStartCreatingPreferences() {
   setFeedback("Fill the form to create your preferences.", "neutral");
 }
 
+function setAuthMode(mode) {
+  authMode.value = mode;
+  loginForm.password = "";
+  setFeedback(
+    mode === "login"
+      ? "Log in to manage your preferences."
+      : "Create your account to start managing preferences.",
+    "neutral"
+  );
+}
+
 onMounted(async () => {
   try {
     await loadPreferences();
@@ -240,7 +268,7 @@ onMounted(async () => {
       <div class="panel-header">
         <div>
           <p class="panel-kicker">API workspace</p>
-          <h2>{{ isAuthenticated ? "Preferences" : "Login" }}</h2>
+          <h2>{{ isAuthenticated ? "Preferences" : authTitle }}</h2>
         </div>
         <p class="session-copy">
           {{ isLoadingSession ? "Checking active session..." : welcomeMessage }}
@@ -249,7 +277,26 @@ onMounted(async () => {
 
       <p class="feedback" :data-tone="feedbackTone">{{ feedback }}</p>
 
-      <form v-if="!isAuthenticated" class="stack" @submit.prevent="handleLogin">
+      <form v-if="!isAuthenticated" class="stack" @submit.prevent="handleAuthSubmit">
+        <div class="auth-switch">
+          <button
+            class="switch-button"
+            :class="{ active: authMode === 'login' }"
+            type="button"
+            @click="setAuthMode('login')"
+          >
+            Login
+          </button>
+          <button
+            class="switch-button"
+            :class="{ active: authMode === 'register' }"
+            type="button"
+            @click="setAuthMode('register')"
+          >
+            Create account
+          </button>
+        </div>
+
         <label class="field">
           <span>Email</span>
           <input v-model.trim="loginForm.email" type="email" required placeholder="you@example.com" />
@@ -266,8 +313,16 @@ onMounted(async () => {
           />
         </label>
 
-        <button class="primary-button" type="submit" :disabled="isSubmittingLogin">
-          {{ isSubmittingLogin ? "Signing in..." : "Login" }}
+        <button class="primary-button" type="submit" :disabled="isSubmittingAuth">
+          {{
+            isSubmittingAuth
+              ? authMode === "login"
+                ? "Signing in..."
+                : "Creating account..."
+              : authMode === "login"
+                ? "Login"
+                : "Create account"
+          }}
         </button>
       </form>
 
