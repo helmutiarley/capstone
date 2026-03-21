@@ -14,7 +14,11 @@ jobs:
       POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
       POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
       JWT_SECRET: ${{ secrets.JWT_SECRET }}
-      FRONTEND_PORT: ${{ secrets.FRONTEND_PORT }}
+      APP_DOMAIN: ${{ secrets.APP_DOMAIN }}
+      TRAEFIK_NETWORK: ${{ secrets.TRAEFIK_NETWORK }}
+      TRAEFIK_ENTRYPOINTS: ${{ secrets.TRAEFIK_ENTRYPOINTS }}
+      TRAEFIK_CERTRESOLVER: ${{ secrets.TRAEFIK_CERTRESOLVER }}
+      COOKIE_SECURE: ${{ secrets.COOKIE_SECURE }}
 
     steps:
       - name: Deploy via SSH
@@ -27,7 +31,7 @@ jobs:
           timeout: 60s
           command_timeout: 20m
           script_stop: true
-          envs: REPOSITORY,POSTGRES_DB,POSTGRES_USER,POSTGRES_PASSWORD,JWT_SECRET,FRONTEND_PORT
+          envs: REPOSITORY,POSTGRES_DB,POSTGRES_USER,POSTGRES_PASSWORD,JWT_SECRET,APP_DOMAIN,TRAEFIK_NETWORK,TRAEFIK_ENTRYPOINTS,TRAEFIK_CERTRESOLVER,COOKIE_SECURE
           script: |
             set -eu
 
@@ -63,14 +67,23 @@ jobs:
             git checkout main
             git pull origin main
 
-            FRONTEND_PORT_VALUE="${FRONTEND_PORT:-8080}"
+            TRAEFIK_NETWORK_VALUE="${TRAEFIK_NETWORK:-traefik-public}"
+            TRAEFIK_ENTRYPOINTS_VALUE="${TRAEFIK_ENTRYPOINTS:-websecure}"
+            TRAEFIK_CERTRESOLVER_VALUE="${TRAEFIK_CERTRESOLVER:-letsencrypt}"
+            COOKIE_SECURE_VALUE="${COOKIE_SECURE:-true}"
             cat > .env <<EOF
             POSTGRES_DB=${POSTGRES_DB}
             POSTGRES_USER=${POSTGRES_USER}
             POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
             JWT_SECRET=${JWT_SECRET}
-            FRONTEND_PORT=${FRONTEND_PORT_VALUE}
+            APP_DOMAIN=${APP_DOMAIN}
+            TRAEFIK_NETWORK=${TRAEFIK_NETWORK_VALUE}
+            TRAEFIK_ENTRYPOINTS=${TRAEFIK_ENTRYPOINTS_VALUE}
+            TRAEFIK_CERTRESOLVER=${TRAEFIK_CERTRESOLVER_VALUE}
+            COOKIE_SECURE=${COOKIE_SECURE_VALUE}
             EOF
+
+            docker network inspect "${TRAEFIK_NETWORK_VALUE}" >/dev/null 2>&1 || docker network create "${TRAEFIK_NETWORK_VALUE}"
 
             docker compose up -d postgres
 
