@@ -14,11 +14,7 @@ jobs:
       POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
       POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
       JWT_SECRET: ${{ secrets.JWT_SECRET }}
-      APP_DOMAIN: ${{ secrets.APP_DOMAIN }}
       FRONTEND_PORT: ${{ secrets.FRONTEND_PORT }}
-      TRAEFIK_ENTRYPOINTS: ${{ secrets.TRAEFIK_ENTRYPOINTS }}
-      TRAEFIK_CERTRESOLVER: ${{ secrets.TRAEFIK_CERTRESOLVER }}
-      TRAEFIK_ACME_EMAIL: ${{ secrets.TRAEFIK_ACME_EMAIL }}
       COOKIE_SECURE: ${{ secrets.COOKIE_SECURE }}
 
     steps:
@@ -32,7 +28,7 @@ jobs:
           timeout: 60s
           command_timeout: 20m
           script_stop: true
-          envs: REPOSITORY,POSTGRES_DB,POSTGRES_USER,POSTGRES_PASSWORD,JWT_SECRET,APP_DOMAIN,FRONTEND_PORT,TRAEFIK_ENTRYPOINTS,TRAEFIK_CERTRESOLVER,TRAEFIK_ACME_EMAIL,COOKIE_SECURE
+          envs: REPOSITORY,POSTGRES_DB,POSTGRES_USER,POSTGRES_PASSWORD,JWT_SECRET,FRONTEND_PORT,COOKIE_SECURE
           script: |
             set -eu
 
@@ -69,46 +65,15 @@ jobs:
             git pull origin main
 
             FRONTEND_PORT_VALUE="${FRONTEND_PORT:-8080}"
-            TRAEFIK_ENTRYPOINTS_VALUE="${TRAEFIK_ENTRYPOINTS:-websecure}"
-            TRAEFIK_CERTRESOLVER_VALUE="${TRAEFIK_CERTRESOLVER:-letsencrypt}"
-            TRAEFIK_ACME_EMAIL_VALUE="${TRAEFIK_ACME_EMAIL:?TRAEFIK_ACME_EMAIL secret is required}"
             COOKIE_SECURE_VALUE="${COOKIE_SECURE:-true}"
             cat > .env <<EOF
             POSTGRES_DB=${POSTGRES_DB}
             POSTGRES_USER=${POSTGRES_USER}
             POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
             JWT_SECRET=${JWT_SECRET}
-            APP_DOMAIN=${APP_DOMAIN}
             FRONTEND_PORT=${FRONTEND_PORT_VALUE}
-            TRAEFIK_ENTRYPOINTS=${TRAEFIK_ENTRYPOINTS_VALUE}
-            TRAEFIK_CERTRESOLVER=${TRAEFIK_CERTRESOLVER_VALUE}
             COOKIE_SECURE=${COOKIE_SECURE_VALUE}
             EOF
-
-            mkdir -p /root/capstone/infra/traefik/data/letsencrypt
-            mkdir -p /root/capstone/infra/traefik/dynamic
-            touch /root/capstone/infra/traefik/data/letsencrypt/acme.json
-            chmod 600 /root/capstone/infra/traefik/data/letsencrypt/acme.json
-            cat > /root/capstone/infra/traefik/dynamic/capstone.yml <<EOF
-            http:
-              routers:
-                capstone:
-                  rule: Host(\`${APP_DOMAIN}\`)
-                  entryPoints:
-                    - ${TRAEFIK_ENTRYPOINTS_VALUE}
-                  service: capstone
-                  tls:
-                    certResolver: ${TRAEFIK_CERTRESOLVER_VALUE}
-              services:
-                capstone:
-                  loadBalancer:
-                    servers:
-                      - url: http://host.docker.internal:${FRONTEND_PORT_VALUE}
-            EOF
-
-            TRAEFIK_CERTRESOLVER="${TRAEFIK_CERTRESOLVER_VALUE}" \
-            TRAEFIK_ACME_EMAIL="${TRAEFIK_ACME_EMAIL_VALUE}" \
-            docker compose -p traefik -f infra/traefik/docker-compose.yml up -d
 
             docker compose up -d postgres
 
