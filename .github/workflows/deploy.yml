@@ -74,22 +74,9 @@ jobs:
 
             docker compose up -d postgres
 
-            until docker compose exec -T postgres pg_isready -U "${POSTGRES_USER}" -d postgres >/dev/null 2>&1; do
+            until docker compose ps postgres | grep -q "healthy"; do
               sleep 2
             done
-
-            docker compose exec -T postgres psql -v ON_ERROR_STOP=1 -U "${POSTGRES_USER}" -d postgres <<SQL
-            SELECT 'CREATE DATABASE "${POSTGRES_DB}"'
-            WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = '${POSTGRES_DB}')\gexec
-            SQL
-
-            docker compose exec -T postgres psql -v ON_ERROR_STOP=1 -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" <<SQL
-            GRANT ALL ON SCHEMA public TO "${POSTGRES_USER}";
-            GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO "${POSTGRES_USER}";
-            GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO "${POSTGRES_USER}";
-            ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO "${POSTGRES_USER}";
-            ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO "${POSTGRES_USER}";
-            SQL
 
             docker compose up -d --build --remove-orphans
             docker image prune -f
