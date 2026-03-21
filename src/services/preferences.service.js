@@ -30,6 +30,14 @@ export async function setPreferences(userId, preferences) {
 }
 
 export async function removePreferences(userId) {
+  const existingPreferences = await getUserPreferences(userId);
+
+  if (!existingPreferences) {
+    const error = new Error("Preferences not found");
+    error.statusCode = 404;
+    throw error;
+  }
+
   return await deleteUserPreferences(userId);
 }
 

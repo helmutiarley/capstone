@@ -68,7 +68,7 @@ export async function login(req, res) {
 export async function logout(req, res) {
   try {
     // Clear the auth token cookie
-    res.clearCookie("auth-token");
+    res.clearCookie("authToken");
     res.status(200).json({ message: "User logged out successfully" });
   } catch (error) {
     // FEATURE: add better error handling and logging
