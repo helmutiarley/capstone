@@ -16,4 +16,8 @@ app.get("/api/health", (_req, res) => {
 app.use("/api/auth", authRouter);
 app.use("/api/preferences", preferencesRouter);
 
+app.use((req, res) => {
+  res.status(404).json({ message: "Endpoint not found" });
+});
+
 export default app;
