@@ -2,6 +2,7 @@ import "dotenv/config";
 import express from "express";
 import cookieParser from "cookie-parser";
 import authRouter from "./routes/auth.routes.js";
+import cacheRouter from "./routes/cache.routes.js";
 import preferencesRouter from "./routes/preferences.routes.js";
 
 const app = express();
@@ -14,6 +15,7 @@ app.get("/api/health", (_req, res) => {
 });
 
 app.use("/api/auth", authRouter);
+app.use("/api/cache", cacheRouter);
 app.use("/api/preferences", preferencesRouter);
 
 app.use((req, res) => {
